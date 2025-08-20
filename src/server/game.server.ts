@@ -1,29 +1,38 @@
-import { Players } from "@rbxts/services";
+import { Players, ReplicatedStorage } from "@rbxts/services";
 
-const seats = [
-	game.Workspace.FindFirstChild("Player1Seat") as Seat,
-	game.Workspace.FindFirstChild("Player2Seat") as Seat,
-];
+const startAppearEvent = ReplicatedStorage.FindFirstChild("StartAppearEvent") as RemoteEvent;
 
-let currentPlayer: Player | undefined = undefined;
+const seat1 = game.Workspace.WaitForChild("Player1Seat") as Seat;
+const seat2 = game.Workspace.WaitForChild("Player2Seat") as Seat;
 
-function onOccupantChanged(seat: Seat) {
+let lastPlayer1: Player | undefined;
+let lastPlayer2: Player | undefined;
+
+function getPlayerFromSeat(seat: Seat): Player | undefined {
 	const humanoid = seat.Occupant as Humanoid | undefined;
 	if (humanoid) {
-		const player = Players.GetPlayerFromCharacter(humanoid.Parent);
-
-		if (player) {
-			print(player.Name + " Has sat down in " + seat.Name);
-			currentPlayer = player;
-			return;
-		}
-	}
-	if (currentPlayer) {
-		print(currentPlayer.Name + " has got up");
-		currentPlayer = undefined;
+		return Players.GetPlayerFromCharacter(humanoid.Parent);
+	} else {
+		return undefined;
 	}
 }
 
-for (const seat of seats) {
-	seat.GetPropertyChangedSignal("Occupant").Connect(() => onOccupantChanged(seat));
+function updateSeats() {
+	const player1 = getPlayerFromSeat(seat1);
+	const player2 = getPlayerFromSeat(seat2);
+
+	if (player1) startAppearEvent.FireClient(player1, !!player2);
+
+	if (lastPlayer1 && lastPlayer1 !== player1) startAppearEvent.FireClient(lastPlayer1, false);
+
+	lastPlayer1 = player1;
+
+	if (player2) startAppearEvent.FireClient(player2, !!player1);
+
+	if (lastPlayer2 && lastPlayer2 !== player2) startAppearEvent.FireClient(lastPlayer2, false);
+
+	lastPlayer2 = player2;
 }
+
+seat1.GetPropertyChangedSignal("Occupant").Connect(updateSeats);
+seat2.GetPropertyChangedSignal("Occupant").Connect(updateSeats);
