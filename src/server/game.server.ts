@@ -32,6 +32,8 @@ function updateSeats() {
 	if (lastPlayer2 && lastPlayer2 !== player2) startAppearEvent.FireClient(lastPlayer2, false);
 
 	lastPlayer2 = player2;
+
+	print("got here");
 }
 
 seat1.GetPropertyChangedSignal("Occupant").Connect(updateSeats);
