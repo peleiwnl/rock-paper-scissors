@@ -1,8 +1,14 @@
 import { Players, ReplicatedStorage } from "@rbxts/services";
+import { Answer } from "shared/Answer";
+import { Result } from "shared/Result";
 
 const startAppearEvent = ReplicatedStorage.FindFirstChild("StartAppearEvent") as RemoteEvent;
+const startGame = ReplicatedStorage.FindFirstChild("StartGame") as RemoteEvent;
+const chosenItem = ReplicatedStorage.FindFirstChild("ChosenItem") as RemoteEvent;
+const winnerEvent = ReplicatedStorage.FindFirstChild("WinnerEvent") as RemoteEvent;
 
 const arenas = game.Workspace.WaitForChild("Arenas");
+const roundChoices: Map<Player, Answer> = new Map();
 
 let currentPlayer1: Player | undefined;
 let currentPlayer2: Player | undefined;
@@ -42,4 +48,66 @@ for (const arena of arenas.GetChildren()) {
 			checkSeats(seat1, seat2);
 		});
 	});
+}
+
+startGame.OnServerEvent.Connect((player) => {
+	print(player.Name + " started the game!");
+
+	if (currentPlayer1 && currentPlayer2) {
+		startGame.FireClient(currentPlayer1);
+		startGame.FireClient(currentPlayer2);
+	}
+});
+
+chosenItem.OnServerEvent.Connect((player, ...args) => {
+	const answer = args[0] as Answer;
+	roundChoices.set(player, answer);
+
+	if (roundChoices.size() === 2) {
+		processRound();
+	}
+});
+
+function processRound() {
+	const players: Player[] = [];
+
+	roundChoices.forEach((_choice, player) => {
+		players.push(player);
+	});
+
+	const [player1, player2] = players;
+	const choice1 = roundChoices.get(player1)!;
+	const choice2 = roundChoices.get(player2)!;
+
+	const winner = determineWinner(choice1, choice2);
+
+	if (winner === 0) {
+		print("its a tie");
+		winnerEvent.FireClient(player1, Result.Tie);
+		winnerEvent.FireClient(player2, Result.Tie);
+	} else if (winner === 1) {
+		print(player1.Name + " wins!");
+		winnerEvent.FireClient(player1, Result.Win);
+		winnerEvent.FireClient(player2, Result.Loss);
+	} else {
+		print(player2.Name + " wins!");
+		winnerEvent.FireClient(player1, Result.Loss);
+		winnerEvent.FireClient(player2, Result.Win);
+	}
+
+	roundChoices.clear();
+}
+
+function determineWinner(choice1: Answer, choice2: Answer): number {
+	if (choice1 === choice2) return 0;
+
+	if (
+		(choice1 === Answer.Rock && choice2 === Answer.Scissors) ||
+		(choice1 === Answer.Paper && choice2 === Answer.Rock) ||
+		(choice1 === Answer.Scissors && choice2 === Answer.Paper)
+	) {
+		return 1;
+	}
+
+	return 2;
 }
