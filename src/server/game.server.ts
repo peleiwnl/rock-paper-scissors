@@ -6,7 +6,6 @@ const arenas = game.Workspace.WaitForChild("Arenas");
 
 function findSeatedPlayers(seat1: Seat, seat2: Seat) {
 	const checkSeats = () => {
-		task.wait();
 		print("Seat1 occupant:", seat1.Occupant);
 		print("Seat2 occupant:", seat2.Occupant);
 
