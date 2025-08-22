@@ -1,40 +1,35 @@
 import { Players, ReplicatedStorage } from "@rbxts/services";
+import { Arena } from "./services/arenas.service";
 
 const startAppearEvent = ReplicatedStorage.FindFirstChild("StartAppearEvent") as RemoteEvent;
 
-const seat1 = game.Workspace.WaitForChild("Player1Seat") as Seat;
-const seat2 = game.Workspace.WaitForChild("Player2Seat") as Seat;
+const arenas = game.Workspace.WaitForChild("Arenas");
 
-let lastPlayer1: Player | undefined;
-let lastPlayer2: Player | undefined;
+function findSeatedPlayers(seat1: Seat, seat2: Seat) {
+	const checkSeats = () => {
+		print("Seat1 occupant:", seat1.Occupant);
+		print("Seat2 occupant:", seat2.Occupant);
 
-function getPlayerFromSeat(seat: Seat): Player | undefined {
-	const humanoid = seat.Occupant as Humanoid | undefined;
-	if (humanoid) {
-		return Players.GetPlayerFromCharacter(humanoid.Parent);
-	} else {
-		return undefined;
-	}
+		const player1Humanoid = seat1.Occupant?.Parent;
+		const player2Humanoid = seat2.Occupant?.Parent;
+
+		if (player1Humanoid && player2Humanoid) {
+			const player1 = Players.GetPlayerFromCharacter(player1Humanoid);
+			const player2 = Players.GetPlayerFromCharacter(player2Humanoid);
+
+			if (player1 && player2) {
+				print("Both players seated");
+				//fire player1 and player2
+			}
+		}
+	};
+
+	seat1.GetPropertyChangedSignal("Occupant").Connect(checkSeats);
+	seat2.GetPropertyChangedSignal("Occupant").Connect(checkSeats);
 }
 
-function updateSeats() {
-	const player1 = getPlayerFromSeat(seat1);
-	const player2 = getPlayerFromSeat(seat2);
-
-	if (player1) startAppearEvent.FireClient(player1, !!player2);
-
-	if (lastPlayer1 && lastPlayer1 !== player1) startAppearEvent.FireClient(lastPlayer1, false);
-
-	lastPlayer1 = player1;
-
-	if (player2) startAppearEvent.FireClient(player2, !!player1);
-
-	if (lastPlayer2 && lastPlayer2 !== player2) startAppearEvent.FireClient(lastPlayer2, false);
-
-	lastPlayer2 = player2;
-
-	print("got here");
+for (const arena of arenas.GetChildren()) {
+	const seat1 = arena.WaitForChild("Seat1") as Seat;
+	const seat2 = arena.WaitForChild("Seat2") as Seat;
+	findSeatedPlayers(seat1, seat2);
 }
-
-seat1.GetPropertyChangedSignal("Occupant").Connect(updateSeats);
-seat2.GetPropertyChangedSignal("Occupant").Connect(updateSeats);

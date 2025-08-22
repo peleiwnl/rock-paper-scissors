@@ -10,6 +10,4 @@ startAppearEvent.OnClientEvent.Connect((showButton: boolean) => {
 	startGameUI.Enabled = showButton;
 });
 
-startGameButton.Activated.Connect(() => {
-	print("Got here");
-});
+startGameButton.Activated.Connect(() => {});
