@@ -1,5 +1,4 @@
 import { Players, ReplicatedStorage } from "@rbxts/services";
-import { Arena } from "./services/arenas.service";
 
 const startAppearEvent = ReplicatedStorage.FindFirstChild("StartAppearEvent") as RemoteEvent;
 
@@ -7,6 +6,10 @@ const arenas = game.Workspace.WaitForChild("Arenas");
 
 function findSeatedPlayers(seat1: Seat, seat2: Seat) {
 	const checkSeats = () => {
+		task.wait();
+		print("Seat1 occupant:", seat1.Occupant);
+		print("Seat2 occupant:", seat2.Occupant);
+
 		const player1Humanoid = seat1.Occupant?.Parent;
 		const player2Humanoid = seat2.Occupant?.Parent;
 
