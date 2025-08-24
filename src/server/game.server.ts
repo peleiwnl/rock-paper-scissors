@@ -1,6 +1,7 @@
 import { Players, ReplicatedStorage } from "@rbxts/services";
 import { Answer } from "shared/Answer";
 import { Result } from "shared/Result";
+import { leaderboardSetup } from "./services/player.service";
 
 const startAppearEvent = ReplicatedStorage.FindFirstChild("StartAppearEvent") as RemoteEvent;
 const startGame = ReplicatedStorage.FindFirstChild("StartGame") as RemoteEvent;
@@ -12,6 +13,8 @@ const roundChoices: Map<Player, Answer> = new Map();
 
 let currentPlayer1: Player | undefined;
 let currentPlayer2: Player | undefined;
+
+leaderboardSetup();
 
 function checkSeats(seat1: Seat, seat2: Seat) {
 	const player1Humanoid = seat1.Occupant?.Parent;
@@ -68,6 +71,11 @@ chosenItem.OnServerEvent.Connect((player, ...args) => {
 	}
 });
 
+function getStat(player: Player, statName: string): NumberValue | undefined {
+	const leaderstats = player.FindFirstChild("leaderstats") as Folder | undefined;
+	return leaderstats?.WaitForChild(statName) as NumberValue | undefined;
+}
+
 function processRound() {
 	const players: Player[] = [];
 
@@ -79,6 +87,9 @@ function processRound() {
 	const choice1 = roundChoices.get(player1)!;
 	const choice2 = roundChoices.get(player2)!;
 
+	const [player1Wins, player1Losses] = ["Wins", "Losses"].map((s) => getStat(player1, s));
+	const [player2Wins, player2Losses] = ["Wins", "Losses"].map((s) => getStat(player2, s));
+
 	const winner = determineWinner(choice1, choice2);
 
 	if (winner === 0) {
@@ -88,11 +99,15 @@ function processRound() {
 	} else if (winner === 1) {
 		print(player1.Name + " wins!");
 		winnerEvent.FireClient(player1, Result.Win);
+		if (player1Wins) player1Wins.Value++;
 		winnerEvent.FireClient(player2, Result.Loss);
+		if (player2Losses) player2Losses.Value++;
 	} else {
 		print(player2.Name + " wins!");
 		winnerEvent.FireClient(player1, Result.Loss);
+		if (player1Losses) player1Losses.Value++;
 		winnerEvent.FireClient(player2, Result.Win);
+		if (player2Wins) player2Wins.Value++;
 	}
 
 	roundChoices.clear();
